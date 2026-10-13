@@ -1,5 +1,6 @@
 //@flow
 import { findGDJS } from '../GameEngineFinder/LocalGDJSFinder';
+import { setupAutocompletions as setupBrowserAutocompletions } from './BrowserCodeEditorAutocompletions';
 import optionalRequire from '../Utils/OptionalRequire';
 const fs = optionalRequire('fs');
 const path = optionalRequire('path');
@@ -20,6 +21,8 @@ const addRuntimeLib = (monaco: any, content: string, path: string) => {
 };
 
 export const setupAutocompletions = (monaco: any): Promise<void> => {
+  if (!fs || !path) return setupBrowserAutocompletions(monaco);
+
   const importAllJsFilesFromFolder = (folderPath: string) =>
     fs.readdir(folderPath, (error: ?Error, filenames: Array<string>) => {
       if (error) {

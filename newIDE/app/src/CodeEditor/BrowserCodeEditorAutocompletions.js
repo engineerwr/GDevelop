@@ -1,9 +1,25 @@
 // @flow
 
 export const setupAutocompletions = (monaco: any): Promise<void> => {
-  // No autocompletions are implemented in web-app
-  // TODO: Could be provided by a compile time generation of a .d.ts
-  // using TypeScript from the game engine sources, and have a script integrate the .d.ts
-  // into newIDE sources (see LocalCodeEditorAutocompletions).
-  return Promise.resolve();
+  // The browser cannot read the GDJS source tree with fs as the desktop app
+  // does. Load the declarations shipped with the web app for object scripts.
+  const declarationsUrl = new URL('gdjs-object-script.d.ts', document.baseURI);
+  return fetch(declarationsUrl.toString())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`Unable to load GDJS types: ${response.status}`);
+      }
+      return response.text();
+    })
+    .then(declarations => {
+      const virtualPath = 'file:///gdjs-object-script.d.ts';
+      monaco.languages.typescript.javascriptDefaults.addExtraLib(
+        declarations,
+        virtualPath
+      );
+      monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        declarations,
+        virtualPath
+      );
+    });
 };
