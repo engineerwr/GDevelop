@@ -933,6 +933,10 @@ interface gdObject {
     [Const, Ref] DOMString GetType();
     void SetResourcesPreloading([Const] DOMString value);
     [Const, Ref] DOMString GetResourcesPreloading();
+    void SetTypeScriptSource([Const] DOMString source);
+    [Const, Ref] DOMString GetTypeScriptSource();
+    void SetCompiledScript([Const] DOMString code);
+    [Const, Ref] DOMString GetCompiledScript();
 
     [Ref] ObjectConfiguration GetConfiguration();
 

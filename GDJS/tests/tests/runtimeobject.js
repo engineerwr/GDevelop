@@ -14,6 +14,41 @@ describe('gdjs.RuntimeObject', () => {
     runtimeScene = new gdjs.TestRuntimeScene(runtimeGame);
   });
 
+  it('runs an object script with independent state for each instance and hot reloads it', () => {
+    const objectData = {
+      name: 'Scripted',
+      type: '',
+      variables: [],
+      behaviors: [],
+      effects: [],
+      compiledScript: `
+        let updates = 0;
+        function onCreate(self) { self.setX(1); }
+        function onUpdate(self) { self.setX(self.getX() + ++updates); }
+        function onDestroy(self) { self.setY(55); }
+      `,
+    };
+    const first = new gdjs.TestRuntimeObject(runtimeScene, objectData);
+    const second = new gdjs.TestRuntimeObject(runtimeScene, objectData);
+
+    expect(first.getX()).to.be(1);
+    expect(second.getX()).to.be(1);
+    first.stepBehaviorsPreEvents(runtimeScene);
+    first.stepBehaviorsPreEvents(runtimeScene);
+    second.stepBehaviorsPreEvents(runtimeScene);
+    expect(first.getX()).to.be(4);
+    expect(second.getX()).to.be(2);
+
+    first.reloadObjectScript({
+      ...objectData,
+      compiledScript: 'function onCreate(self) { self.setX(100); }',
+    });
+    expect(first.getX()).to.be(100);
+    expect(first.getY()).to.be(55);
+    first.stepBehaviorsPreEvents(runtimeScene);
+    expect(first.getX()).to.be(100);
+  });
+
   it('should compute distances properly', () => {
     const object = new gdjs.TestRuntimeObject(runtimeScene, {
       name: 'obj1',

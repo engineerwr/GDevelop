@@ -805,6 +805,10 @@ export class gdObject extends EmscriptenObject {
   getType(): string;
   setResourcesPreloading(value: string): void;
   getResourcesPreloading(): string;
+  setTypeScriptSource(source: string): void;
+  getTypeScriptSource(): string;
+  setCompiledScript(code: string): void;
+  getCompiledScript(): string;
   getConfiguration(): ObjectConfiguration;
   getVariables(): VariablesContainer;
   getEffects(): EffectsContainer;

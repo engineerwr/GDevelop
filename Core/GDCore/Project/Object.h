@@ -151,6 +151,16 @@ class GD_CORE_API Object {
     return resourcesPreloading;
   }
 
+  /** TypeScript authored for each instance of this object. */
+  void SetTypeScriptSource(const gd::String& source) {
+    typeScriptSource = source;
+  }
+  const gd::String& GetTypeScriptSource() const { return typeScriptSource; }
+
+  /** JavaScript emitted from the TypeScript source by the editor. */
+  void SetCompiledScript(const gd::String& code) { compiledScript = code; }
+  const gd::String& GetCompiledScript() const { return compiledScript; }
+
   ///@}
 
   /** \name Behaviors management
@@ -308,6 +318,8 @@ class GD_CORE_API Object {
                                       ///< useful for computing changesets.
   /** When set to `"manually"`, its resources are not preloaded with the scene. */
   gd::String resourcesPreloading = "with-scene";
+  gd::String typeScriptSource;
+  gd::String compiledScript;
 
   static std::size_t nameGeneration;  ///< See GetNameGeneration.
 

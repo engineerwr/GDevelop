@@ -13,6 +13,7 @@ import {
 
 type Props = {|
   value: string,
+  language: 'javascript' | 'typescript',
   onChange: string => void,
   width: number,
   height: number,
@@ -233,7 +234,7 @@ class PoppedOutMonacoEditor extends React.Component<Props, State> {
     this._editor = monaco.editor.create(container, {
       ...baseEditorOptions,
       value: this.props.value,
-      language: 'javascript',
+      language: this.props.language,
       theme: this.props.theme,
       fontSize: this.props.fontSize,
     });

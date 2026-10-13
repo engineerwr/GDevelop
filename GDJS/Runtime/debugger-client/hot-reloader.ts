@@ -1260,6 +1260,7 @@ namespace gdjs {
 
         // Update instances state
         runtimeObjects.forEach((runtimeObject) => {
+          runtimeObject.reloadObjectScript(newObjectData);
           // Update the runtime object
           hotReloadSucceeded =
             runtimeObject.updateFromObjectData(oldObjectData, newObjectData) &&

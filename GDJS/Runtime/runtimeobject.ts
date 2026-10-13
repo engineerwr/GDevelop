@@ -167,6 +167,39 @@ namespace gdjs {
     moveYArray: [],
   };
 
+  type ObjectScriptHandlers = {
+    onCreate?: (self: RuntimeObject, scene: RuntimeScene) => void;
+    onUpdate?: (self: RuntimeObject, scene: RuntimeScene, dt: number) => void;
+    onDestroy?: (self: RuntimeObject, scene: RuntimeScene) => void;
+  };
+
+  // The generated function is shared by all instances. Calling it gives each
+  // instance its own lexical scope for variables declared in the script.
+  const objectScriptFactories = new Map<
+    string,
+    (runtimeApi: typeof gdjs) => ObjectScriptHandlers
+  >();
+
+  const createObjectScriptHandlers = (code: string): ObjectScriptHandlers => {
+    let factory = objectScriptFactories.get(code);
+    if (!factory) {
+      factory = new Function(
+        'gdjs',
+        code +
+          '\nreturn {' +
+          'onCreate: typeof onCreate === "function" ? onCreate : undefined,' +
+          'onUpdate: typeof onUpdate === "function" ? onUpdate : undefined,' +
+          'onDestroy: typeof onDestroy === "function" ? onDestroy : undefined' +
+          '};'
+      ) as (runtimeApi: typeof gdjs) => ObjectScriptHandlers;
+      // Editing a script repeatedly during preview should not keep every old
+      // compiled version in memory for the rest of the session.
+      if (objectScriptFactories.size >= 64) objectScriptFactories.clear();
+      objectScriptFactories.set(code, factory);
+    }
+    return factory(gdjs);
+  };
+
   /**
    * Data structure that are (re)used by
    * {@link RuntimeObject.raycastTest} to avoid any allocation.
@@ -351,6 +384,8 @@ namespace gdjs {
      */
     protected _behaviorsTable: Hashtable<gdjs.RuntimeBehavior>;
     protected _timers: Hashtable<gdjs.Timer>;
+    private _compiledScript: string = '';
+    private _scriptHandlers: ObjectScriptHandlers | null = null;
     private _surface: gdjs.Surface | null = null;
 
     /**
@@ -367,6 +402,7 @@ namespace gdjs {
       this._nameId = RuntimeObject.getNameIdentifier(this.name);
       this.id = instanceContainer.getScene().createNewUniqueId();
       this._runtimeScene = instanceContainer;
+      this._compiledScript = objectData.compiledScript || '';
       this._defaultHitBoxes.push(gdjs.Polygon.createRectangle(0, 0));
       this.hitBoxes = this._defaultHitBoxes;
       this._variables = new gdjs.VariablesContainer(
@@ -441,6 +477,10 @@ namespace gdjs {
           behavior.onCreated();
         }
       }
+      if (this._compiledScript) {
+        this._scriptHandlers = createObjectScriptHandlers(this._compiledScript);
+        this._scriptHandlers.onCreate?.(this, this._runtimeScene.getScene());
+      }
     }
 
     /**
@@ -484,6 +524,8 @@ namespace gdjs {
       this.aabb.max[0] = 0;
       this.aabb.max[1] = 0;
       this._variables = new gdjs.VariablesContainer(objectData.variables);
+      this._compiledScript = objectData.compiledScript || '';
+      this._scriptHandlers = null;
       this.clearForces();
       this._surface = null;
 
@@ -825,6 +867,8 @@ namespace gdjs {
      * (`super.onDeletedFromScene();`).
      */
     onDeletedFromScene(): void {
+      this._scriptHandlers?.onDestroy?.(this, this._runtimeScene.getScene());
+      this._scriptHandlers = null;
       const theLayer = this._runtimeScene.getLayer(this.layer);
       const rendererObject = this.getRendererObject();
       if (rendererObject) {
@@ -2224,6 +2268,23 @@ namespace gdjs {
       for (let i = 0, len = this._behaviors.length; i < len; ++i) {
         this._behaviors[i].stepPreEvents(instanceContainer);
       }
+      this._scriptHandlers?.onUpdate?.(
+        this,
+        instanceContainer.getScene(),
+        this.getElapsedTime() / 1000
+      );
+    }
+
+    /** Replace the script on a live instance after a project hot reload. */
+    reloadObjectScript(objectData: ObjectData): void {
+      const nextCode = objectData.compiledScript || '';
+      if (nextCode === this._compiledScript) return;
+      this._scriptHandlers?.onDestroy?.(this, this._runtimeScene.getScene());
+      this._compiledScript = nextCode;
+      this._scriptHandlers = nextCode
+        ? createObjectScriptHandlers(nextCode)
+        : null;
+      this._scriptHandlers?.onCreate?.(this, this._runtimeScene.getScene());
     }
 
     /**

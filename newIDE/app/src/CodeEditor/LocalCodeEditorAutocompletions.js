@@ -14,6 +14,11 @@ const excludedFiles = [
   'three.js',
 ];
 
+const addRuntimeLib = (monaco: any, content: string, path: string) => {
+  monaco.languages.typescript.javascriptDefaults.addExtraLib(content, path);
+  monaco.languages.typescript.typescriptDefaults.addExtraLib(content, path);
+};
+
 export const setupAutocompletions = (monaco: any): Promise<void> => {
   const importAllJsFilesFromFolder = (folderPath: string) =>
     fs.readdir(folderPath, (error: ?Error, filenames: Array<string>) => {
@@ -47,10 +52,7 @@ export const setupAutocompletions = (monaco: any): Promise<void> => {
               return;
             }
 
-            monaco.languages.typescript.javascriptDefaults.addExtraLib(
-              content,
-              fullPath
-            );
+            addRuntimeLib(monaco, content, fullPath);
           });
         }
       });
@@ -82,10 +84,7 @@ export const setupAutocompletions = (monaco: any): Promise<void> => {
               return;
             }
 
-            monaco.languages.typescript.javascriptDefaults.addExtraLib(
-              content,
-              fullPath
-            );
+            addRuntimeLib(monaco, content, fullPath);
           });
         }
       });

@@ -40,6 +40,11 @@ export const initializeCompletions = (monaco: any) => {
     allowJs: true,
     checkJs: true,
   });
+  monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+    ...monaco.languages.typescript.typescriptDefaults.getCompilerOptions(),
+    target: monaco.languages.typescript.ScriptTarget.ES2019,
+    noEmit: true,
+  });
 
   setupAutocompletions(monaco).catch(error => {
     // No GDJS sources at hand (the web app, or a desktop build without them):

@@ -24,6 +24,7 @@ export type State = {|
 |};
 export type Props = {|
   value: string,
+  language?: 'javascript' | 'typescript',
   onChange: string => void,
   initialScrollTop: number,
   initialCursorColumn: number,
@@ -49,6 +50,7 @@ export type Props = {|
 
 export const CodeEditor = ({
   value,
+  language = 'javascript',
   onChange,
   initialScrollTop,
   initialCursorColumn,
@@ -182,6 +184,7 @@ export const CodeEditor = ({
     return (
       <PoppedOutMonacoEditor
         value={value}
+        language={language}
         onChange={onChange}
         width={width || 600}
         height={height || 200}
@@ -229,7 +232,7 @@ export const CodeEditor = ({
       <MonacoEditor
         width={width || 600}
         height={height || 200}
-        language="javascript"
+        language={language}
         theme={preferences.codeEditorThemeName}
         value={value}
         onChange={onChange}

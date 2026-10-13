@@ -54,6 +54,8 @@ void Object::CopyWithoutConfiguration(const gd::Object& object) {
   effectsContainer = object.effectsContainer;
   behaviors = object.behaviors;
   resourcesPreloading = object.resourcesPreloading;
+  typeScriptSource = object.typeScriptSource;
+  compiledScript = object.compiledScript;
 }
 
 gd::ObjectConfiguration& Object::GetConfiguration() { return *configuration; }
@@ -98,6 +100,12 @@ void Object::UnserializeFrom(gd::Project& project,
   assetStoreId = element.GetStringAttribute("assetStoreId");
   SetName(element.GetStringAttribute("name", name, "nom"));
   resourcesPreloading = element.GetStringAttribute("resourcesPreloading", "with-scene");
+  typeScriptSource = element.HasChild("typeScriptSource")
+                         ? element.GetChild("typeScriptSource").GetStringValue()
+                         : "";
+  compiledScript = element.HasChild("compiledScript")
+                       ? element.GetChild("compiledScript").GetStringValue()
+                       : "";
 
   objectVariables.UnserializeFrom(
       element.GetChild("variables", 0, "Variables"));
@@ -144,6 +152,12 @@ void Object::SerializeTo(SerializerElement& element) const {
   element.SetAttribute("type", GetType());
   if (GetResourcesPreloading() != "with-scene") {
     element.SetAttribute("resourcesPreloading", GetResourcesPreloading());
+  }
+  if (!typeScriptSource.empty()) {
+    element.AddChild("typeScriptSource").SetStringValue(typeScriptSource);
+  }
+  if (!compiledScript.empty()) {
+    element.AddChild("compiledScript").SetStringValue(compiledScript);
   }
   objectVariables.SerializeTo(element.AddChild("variables"));
   effectsContainer.SerializeTo(element.AddChild("effects"));

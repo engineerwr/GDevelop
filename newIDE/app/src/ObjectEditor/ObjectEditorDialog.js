@@ -26,6 +26,10 @@ import useDismissableTutorialMessage from '../Hints/useDismissableTutorialMessag
 import useAlertDialog from '../UI/Alert/useAlertDialog';
 import ErrorBoundary from '../UI/ErrorBoundary';
 import { ProjectScopedContainersAccessor } from '../InstructionOrExpression/EventsScope';
+import { CodeEditor } from '../CodeEditor';
+import { FullSizeMeasurer } from '../UI/FullSizeMeasurer';
+import Text from '../UI/Text';
+import { compileObjectTypeScript } from './compileObjectTypeScript';
 
 const gd: libGDevelop = global.gd;
 
@@ -33,7 +37,8 @@ export type ObjectEditorTab =
   | 'properties'
   | 'behaviors'
   | 'variables'
-  | 'effects';
+  | 'effects'
+  | 'script';
 
 type Props = {|
   open: boolean,
@@ -128,6 +133,17 @@ const InnerDialog = (props: InnerDialogProps) => {
     initialTab || 'properties'
   );
   const [objectName, setObjectName] = React.useState(props.objectName);
+  const [scriptValue, setScriptValue] = React.useState(
+    object.getTypeScriptSource()
+  );
+  const [scriptError, setScriptError] = React.useState<string | null>(null);
+  const compileRequest = React.useRef(0);
+  React.useEffect(
+    () => () => {
+      compileRequest.current++;
+    },
+    []
+  );
   const forceUpdate = useForceUpdate();
 
   // Ensure variable UUIDs are set for changeset tracking. This must happen
@@ -181,6 +197,19 @@ const InnerDialog = (props: InnerDialogProps) => {
     props.editorComponent;
 
   const onApply = async () => {
+    // Await the latest source, even if the user clicks Apply immediately after
+    // typing. A syntax error leaves the dialog open and the source editable.
+    const request = ++compileRequest.current;
+    try {
+      const code = await compileObjectTypeScript(object.getTypeScriptSource());
+      if (request !== compileRequest.current) return;
+      object.setCompiledScript(code);
+      setScriptError(null);
+    } catch (error) {
+      setScriptError(error.message);
+      setCurrentTab('script');
+      return;
+    }
     props.onApply(hasResourceChanged, hasAnyEffectBeenAdded);
 
     const initialInstances =
@@ -302,6 +331,10 @@ const InnerDialog = (props: InnerDialogProps) => {
               label: <Trans>Variables</Trans>,
               value: 'variables',
             },
+            {
+              label: <Trans>TypeScript</Trans>,
+              value: 'script',
+            },
             objectMetadata.hasDefaultBehavior(
               'EffectCapability::EffectBehavior'
             )
@@ -391,6 +424,51 @@ const InnerDialog = (props: InnerDialogProps) => {
           }}
           isListLocked={isBehaviorListLocked}
         />
+      )}
+      {currentTab === 'script' && (
+        <Column expand noMargin noOverflowParent useFullHeight>
+          <Text>
+            <Trans>
+              Define onCreate(self, scene), onUpdate(self, scene, dt), or
+              onDestroy(self, scene). The dt value is seconds since the last frame.
+            </Trans>
+          </Text>
+          {scriptError && <Text color="error">{scriptError}</Text>}
+          <FullSizeMeasurer>
+            {({ width, height }) => (
+              <CodeEditor
+                language="typescript"
+                value={scriptValue}
+                onChange={(source: string) => {
+                  setScriptValue(source);
+                  object.setTypeScriptSource(source);
+                  object.setCompiledScript('');
+                  setScriptError(null);
+                  notifyOfChange();
+                  const request = ++compileRequest.current;
+                  compileObjectTypeScript(source)
+                    .then(code => {
+                      if (request !== compileRequest.current) return;
+                      object.setCompiledScript(code);
+                      notifyOfChange();
+                    })
+                    .catch(error => {
+                      if (request !== compileRequest.current) return;
+                      setScriptError(error.message);
+                    });
+                }}
+                initialScrollTop={0}
+                initialCursorColumn={1}
+                initialCursorLine={1}
+                saveEditorState={() => {}}
+                onFocus={() => {}}
+                onBlur={() => {}}
+                width={width}
+                height={height}
+              />
+            )}
+          </FullSizeMeasurer>
+        </Column>
       )}
       {currentTab === 'variables' && (
         <Column expand noMargin noOverflowParent>

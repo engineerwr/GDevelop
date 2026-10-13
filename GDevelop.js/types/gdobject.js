@@ -10,6 +10,10 @@ declare class gdObject {
   getType(): string;
   setResourcesPreloading(value: string): void;
   getResourcesPreloading(): string;
+  setTypeScriptSource(source: string): void;
+  getTypeScriptSource(): string;
+  setCompiledScript(code: string): void;
+  getCompiledScript(): string;
   getConfiguration(): gdObjectConfiguration;
   getVariables(): gdVariablesContainer;
   getEffects(): gdEffectsContainer;

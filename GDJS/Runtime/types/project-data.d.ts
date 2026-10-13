@@ -44,6 +44,8 @@ declare type ObjectData = {
   behaviors: Array<BehaviorData & any>;
   /** The list of effects. */
   effects: Array<EffectData>;
+  /** JavaScript emitted by the editor from the object's TypeScript script. */
+  compiledScript?: string;
   /**
    * The resources used by this object excluding the one already used by the
    * scene and/or the project.
