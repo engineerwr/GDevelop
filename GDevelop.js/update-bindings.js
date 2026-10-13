@@ -7,7 +7,7 @@
 
 var debug = false; //If true, add additional checks in bindings files.
 var fs = require('fs');
-var exec = require('child_process').exec;
+var execFile = require('child_process').execFile;
 
 if (!process.env.EMSDK) {
   console.error('EMSDK env. variable is not set');
@@ -39,11 +39,15 @@ function generateGlueFromBinding(cb) {
       return;
     }
 
-    exec(
-      'python "' + webIdlBinderPath + '" Bindings/Bindings.idl Bindings/glue',
+    execFile(
+      process.env.EMSDK_PYTHON || 'python3',
+      [webIdlBinderPath, 'Bindings/Bindings.idl', 'Bindings/glue'],
       function(err, stdout, stderr) {
         if (err) {
-          cb({ message: 'Error while running WebIDL binder:', output: err });
+          return cb({
+            message: 'Error while running WebIDL binder:',
+            output: stderr || err,
+          });
         }
 
         cb(null);
