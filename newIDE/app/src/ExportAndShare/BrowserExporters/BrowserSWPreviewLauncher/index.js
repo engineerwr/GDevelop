@@ -21,6 +21,7 @@ import { getIDEVersionWithHash } from '../../../Version';
 import {
   getBrowserSWPreviewBaseUrl,
   getBrowserSWPreviewRootUrl,
+  ensureBrowserSWPreviewSession,
 } from './BrowserSWPreviewIndexedDB';
 import { setEmbeddedGameFramePreviewLocation } from '../../../EmbeddedGame/EmbeddedGameFrame';
 import { setGameplayTestFramePreviewLocation } from '../../../GameplayTests/GameplayTestFrame';
@@ -84,6 +85,10 @@ export default class BrowserSWPreviewLauncher extends React.Component<
   PreviewLauncherProps,
   State
 > {
+  _lastPreviewedProject: ?gdProject = null;
+  _lastPreviewedSceneName: ?string = null;
+  _lastPreviewedExternalLayoutName: ?string = null;
+
   canDoNetworkPreview = (): any => false;
 
   // $FlowFixMe[missing-local-annot]
@@ -94,6 +99,9 @@ export default class BrowserSWPreviewLauncher extends React.Component<
   closeAllPreviews = () => {
     // This will also close the preview windows themselves.
     browserPreviewDebuggerServer.closeAllConnections();
+    this._lastPreviewedProject = null;
+    this._lastPreviewedSceneName = null;
+    this._lastPreviewedExternalLayoutName = null;
   };
 
   immediatelyPreparePreviewWindows = (
@@ -151,6 +159,14 @@ export default class BrowserSWPreviewLauncher extends React.Component<
       previewOptions.hotReload &&
       !previewOptions.isForGameplayTest &&
       !!debuggerIds.length;
+    // Hot reload updates the running scene's data but does not switch scenes.
+    // Reload the window when the editor is previewing a different scene.
+    const shouldHardReload =
+      previewOptions.shouldHardReload ||
+      (shouldHotReload &&
+        (this._lastPreviewedProject !== project ||
+          this._lastPreviewedSceneName !== sceneName ||
+          this._lastPreviewedExternalLayoutName !== externalLayoutName));
 
     try {
       await this.getPreviewDebuggerServer().startServer({
@@ -166,6 +182,68 @@ export default class BrowserSWPreviewLauncher extends React.Component<
     }
 
     try {
+      await ensureBrowserSWPreviewSession();
+
+      // The development server serves the editor's index.html for unknown URLs.
+      // Navigating to a preview before its service worker is active would open
+      // that page instead of the game exported to IndexedDB.
+      if (!navigator.serviceWorker) {
+        throw new Error('Service workers are required for browser previews.');
+      }
+      let readinessTimeoutId: ?TimeoutID = null;
+      try {
+        await Promise.race([
+          navigator.serviceWorker.ready,
+          new Promise((resolve, reject) => {
+            readinessTimeoutId = setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    'The preview service worker did not become ready. Reload the editor and try again.'
+                  )
+                ),
+              10000
+            );
+          }),
+        ]);
+      } finally {
+        if (readinessTimeoutId) clearTimeout(readinessTimeoutId);
+      }
+
+      // An active worker can exist before it has claimed this editor tab.
+      // Requests made by an uncontrolled tab go to the development server,
+      // which serves the editor instead of the exported preview.
+      if (!navigator.serviceWorker.controller) {
+        await new Promise((resolve, reject) => {
+          let controlTimeoutId: ?TimeoutID = null;
+          const onControllerChange = () => {
+            if (!navigator.serviceWorker.controller) return;
+            navigator.serviceWorker.removeEventListener(
+              'controllerchange',
+              onControllerChange
+            );
+            if (controlTimeoutId) clearTimeout(controlTimeoutId);
+            resolve();
+          };
+          navigator.serviceWorker.addEventListener(
+            'controllerchange',
+            onControllerChange
+          );
+          controlTimeoutId = setTimeout(() => {
+            navigator.serviceWorker.removeEventListener(
+              'controllerchange',
+              onControllerChange
+            );
+            reject(
+              new Error(
+                'The preview service worker did not take control of the editor. Reload the editor and try again.'
+              )
+            );
+          }, 10000);
+          onControllerChange();
+        });
+      }
+
       const {
         exporter,
         outputDir,
@@ -208,9 +286,7 @@ export default class BrowserSWPreviewLauncher extends React.Component<
       // It doesn't have any side effect because when it wont actually do an hot-reload
       // since the game preview doesn't exist yet.
       if (shouldHotReload) {
-        previewExportOptions.setShouldClearExportFolder(
-          previewOptions.shouldHardReload
-        );
+        previewExportOptions.setShouldClearExportFolder(shouldHardReload);
         // At hot-reload, the ProjectData are passed into the message.
         // It means that we don't need to write them in a file.
         previewExportOptions.setShouldReloadProjectData(false);
@@ -299,6 +375,21 @@ export default class BrowserSWPreviewLauncher extends React.Component<
       );
       await browserSWFileSystem.applyPendingOperations();
 
+      // Fail with a useful error instead of opening the editor's fallback page
+      // when the preview route is not handled by the service worker.
+      const previewIndexResponse = await fetch(outputDir + '/index.html', {
+        cache: 'no-store',
+      });
+      const previewIndexHtml = await previewIndexResponse.text();
+      if (
+        !previewIndexResponse.ok ||
+        !previewIndexHtml.includes('new gdjs.RuntimeGame')
+      ) {
+        throw new Error(
+          'The preview files were not served by the service worker. Reload the editor and try again.'
+        );
+      }
+
       if (previewOptions.isForInGameEdition) {
         setEmbeddedGameFramePreviewLocation({
           previewIndexHtmlLocation: outputDir + '/index.html',
@@ -340,13 +431,17 @@ export default class BrowserSWPreviewLauncher extends React.Component<
         );
         runtimeGameOptionsElement.delete();
 
-        if (previewOptions.shouldHardReload) {
+        if (shouldHardReload) {
           console.log(
             `[BrowserSWPreviewLauncher] Triggering hard reload for preview #${previewId}...`
           );
           debuggerIds.forEach(debuggerId => {
             this.getPreviewDebuggerServer().sendMessage(debuggerId, {
               command: 'hardReload',
+              payload: {
+                sceneName,
+                externalLayoutName: externalLayoutName || '',
+              },
             });
           });
         } else {
@@ -425,6 +520,14 @@ export default class BrowserSWPreviewLauncher extends React.Component<
 
       previewExportOptions.delete();
       exporter.delete();
+      if (
+        !previewOptions.isForInGameEdition &&
+        !previewOptions.isForGameplayTest
+      ) {
+        this._lastPreviewedProject = project;
+        this._lastPreviewedSceneName = sceneName;
+        this._lastPreviewedExternalLayoutName = externalLayoutName;
+      }
 
       console.log(
         `[BrowserSWPreviewLauncher] Preview ${previewId} launched successfully in ${Math.ceil(

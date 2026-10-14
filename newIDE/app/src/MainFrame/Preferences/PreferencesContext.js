@@ -400,11 +400,7 @@ export const initialPreferences = {
   values: {
     language: 'en',
     autoDownloadUpdates: true,
-    themeName: ((typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'GDevelop default Dark'
-      : // TODO: Use the light theme back when it's adapted to the modern theme.
-        'GDevelop default Dark'): string),
+    themeName: 'Construct 3',
     codeEditorThemeName: 'vs-dark',
     hiddenAlertMessages: {},
     hiddenTutorialHints: {},

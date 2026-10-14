@@ -260,13 +260,21 @@ self.addEventListener('activate', event => {
 
 self.__WB_DISABLE_DEV_LOGS = true;
 
-// eslint-disable-next-line no-undef
-importScripts(
-  'https://storage.googleapis.com/workbox-cdn/releases/3.5.0/workbox-sw.js'
-);
+// Local previews only need the IndexedDB fetch handler above. Avoid making
+// service worker installation depend on a CDN while developing locally.
+if (!isDev) {
+  try {
+    // eslint-disable-next-line no-undef
+    importScripts(
+      'https://storage.googleapis.com/workbox-cdn/releases/3.5.0/workbox-sw.js'
+    );
+  } catch (error) {
+    console.error('[ServiceWorker] Workbox could not be loaded:', error);
+  }
+}
 
 /* global workbox */
-if (workbox) {
+if (typeof workbox !== 'undefined') {
   console.log('[ServiceWorker] Workbox loaded successfully');
 
   // Will be replaced by make-service-worker.js to include the proper version.

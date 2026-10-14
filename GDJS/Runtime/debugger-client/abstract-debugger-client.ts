@@ -623,7 +623,7 @@ namespace gdjs {
         } else if (data.command === 'hardReload') {
           // This usually means that the preview was modified so much that an entire reload
           // is needed, or that the runtime itself could have been modified.
-          this.launchHardReload();
+          this.launchHardReload(data.payload);
         } else {
           logger.info(
             'Unknown command "' + data.command + '" received by the debugger.'
@@ -1278,7 +1278,10 @@ namespace gdjs {
       );
     }
 
-    launchHardReload(): void {
+    launchHardReload(previewStart?: {
+      sceneName: string;
+      externalLayoutName: string;
+    }): void {
       try {
         const reloadUrl = new URL(location.href);
 
@@ -1290,9 +1293,14 @@ namespace gdjs {
           editorId: initialRuntimeGameStatus?.editorId || '',
           isPaused: this._runtimegame.isPaused(),
           isInGameEdition: this._runtimegame.isInGameEdition(),
-          sceneName: initialRuntimeGameStatus?.sceneName || '',
+          sceneName:
+            previewStart?.sceneName ||
+            initialRuntimeGameStatus?.sceneName ||
+            '',
           injectedExternalLayoutName:
-            initialRuntimeGameStatus?.injectedExternalLayoutName || '',
+            previewStart?.externalLayoutName !== undefined
+              ? previewStart.externalLayoutName
+              : initialRuntimeGameStatus?.injectedExternalLayoutName || '',
           skipCreatingInstancesFromScene:
             initialRuntimeGameStatus?.skipCreatingInstancesFromScene || false,
           eventsBasedObjectType:

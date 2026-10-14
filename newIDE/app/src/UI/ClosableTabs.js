@@ -134,6 +134,7 @@ export const ClosableTabs = ({
 export type ClosableTabProps = {|
   id?: string,
   data?: HTMLDataset,
+  editorKind?: string,
   active: boolean,
   label: ?React.Node,
   icon: ?React.Node,
@@ -153,6 +154,7 @@ export type ClosableTabProps = {|
 export function ClosableTab({
   id,
   data,
+  editorKind,
   active,
   onClose,
   onCloseOthers,
@@ -251,6 +253,8 @@ export function ClosableTab({
     <React.Fragment>
       <span
         id={id}
+        data-editor-kind={editorKind}
+        data-active={active ? 'true' : undefined}
         style={{
           flexShrink: 0, // Tabs are never resized to fit in flex container
           position: 'relative',

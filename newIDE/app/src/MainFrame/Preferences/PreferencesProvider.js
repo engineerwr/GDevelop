@@ -66,9 +66,17 @@ export const loadPreferencesFromLocalStorage = (): ?PreferencesValues => {
       }
     }
 
-    // Migrate renamed themes.
-    if (values.themeName === 'GDevelop default') {
-      values.themeName = 'GDevelop default Light';
+    // Apply the new editor appearance to installations using the former default.
+    if (
+      values.themeName === 'GDevelop default Dark' ||
+      values.themeName === 'GDevelop default Light' ||
+      values.themeName === 'GDevelop default' ||
+      values.themeName === 'Construct 2'
+    ) {
+      values.themeName = 'Construct 3';
+      if (values.codeEditorThemeName === 'vs') {
+        values.codeEditorThemeName = 'vs-dark';
+      }
     } else if (values.themeName === 'Dark') {
       values.themeName = 'Blue Dark';
     }

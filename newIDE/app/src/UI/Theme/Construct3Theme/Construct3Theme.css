@@ -1,0 +1,97 @@
+/* Construct 3 style chrome for the editor shell. */
+.Construct3Theme .title-bar-draggable-part {
+  background: #3d3d3d !important;
+  border-bottom: 1px solid #656565;
+}
+
+.Construct3Theme .title-bar-non-draggable-part[data-editor-kind] {
+  border-radius: 2px 2px 0 0 !important;
+  margin-right: 1px !important;
+}
+
+.Construct3Theme [data-editor-kind='layout'][data-active='true'],
+.Construct3Theme [data-editor-kind='external layout'][data-active='true'] {
+  background: #fbd04c !important;
+  border-color: #fbd04c !important;
+}
+
+.Construct3Theme
+  [data-editor-kind='layout'][data-active='true']
+  .MuiButtonBase-root
+  > span,
+.Construct3Theme
+  [data-editor-kind='external layout'][data-active='true']
+  .MuiButtonBase-root
+  > span {
+  color: #202020 !important;
+}
+
+.Construct3Theme [data-editor-kind='layout'][data-active='true'] svg,
+.Construct3Theme [data-editor-kind='external layout'][data-active='true'] svg {
+  color: #202020;
+}
+
+.Construct3Theme [data-editor-kind='layout events'],
+.Construct3Theme [data-editor-kind='external events'] {
+  color: #38c98d;
+}
+
+.Construct3Theme
+  [data-editor-kind='layout events']:not([data-active='true'])
+  .MuiButtonBase-root
+  > span,
+.Construct3Theme
+  [data-editor-kind='external events']:not([data-active='true'])
+  .MuiButtonBase-root
+  > span {
+  color: #38c98d !important;
+}
+
+.Construct3Theme [data-editor-kind='layout events'][data-active='true'],
+.Construct3Theme [data-editor-kind='external events'][data-active='true'] {
+  background: #2fb67d !important;
+  border-color: #2fb67d !important;
+}
+
+.Construct3Theme
+  [data-editor-kind='layout events'][data-active='true']
+  .MuiButtonBase-root
+  > span,
+.Construct3Theme
+  [data-editor-kind='external events'][data-active='true']
+  .MuiButtonBase-root
+  > span {
+  color: #202020 !important;
+}
+
+.Construct3Theme .mosaic-gd-theme .mosaic-window-toolbar {
+  background: #464646 !important;
+  border-bottom: 1px solid #666666;
+  border-radius: 0 !important;
+}
+
+.Construct3Theme .mosaic-gd-theme .mosaic-window-body {
+  background: #414141 !important;
+}
+
+.Construct3Theme .mosaic-gd-theme .mosaic-window .mosaic-window-title {
+  font-size: 13px;
+  font-weight: 600 !important;
+}
+
+.Construct3Theme .MuiTabs-root {
+  border-bottom: 1px solid #626262;
+}
+
+.Construct3Theme .MuiTab-root {
+  border-right: 1px solid #5b5b5b;
+}
+
+.Construct3Theme .MuiPaper-rounded,
+.Construct3Theme .MuiButton-root {
+  border-radius: 2px;
+}
+
+.Construct3Theme .gd-table .tableHeaderRow {
+  background: #4a4a4a;
+}

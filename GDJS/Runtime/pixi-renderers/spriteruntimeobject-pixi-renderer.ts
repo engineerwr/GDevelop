@@ -60,9 +60,11 @@ namespace gdjs {
       const animationFrame = this._object._animator.getCurrentFrame();
       if (
         animationFrame === null &&
-        !this._object.getInstanceContainer().getGame().isInGameEdition()
+        !this._object.getInstanceContainer().getGame().isInGameEdition() &&
+        !this._object.getInstanceContainer().getGame().isPreview()
       ) {
-        // Sprites without any animation are hidden at runtime.
+        // Keep empty sprites visible as placeholders while previewing a scene.
+        // They remain hidden in exported games until an image is assigned.
         this._sprite.visible = false;
         this._sprite.alpha = 0;
         this._cachedWidth = 0;
